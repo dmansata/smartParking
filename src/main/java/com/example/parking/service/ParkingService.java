@@ -6,6 +6,8 @@ import com.example.parking.Enum.vehicleType;
 import com.example.parking.entity.ParkingSpot;
 import com.example.parking.entity.ParkingSession;
 import com.example.parking.entity.Vehicle;
+import com.example.parking.exception.ConflictException;
+import com.example.parking.exception.ResourceNotFoundException;
 import com.example.parking.repository.ParkingSpotRepository;
 import com.example.parking.repository.ParkingSessionRepository;
 import com.example.parking.repository.VehicleRepository;
@@ -43,13 +45,13 @@ public class ParkingService {
         // 2. Check if the vehicle is already parked
         parkingSessionRepository.findByVehicleAndCheckOutTimeIsNull(vehicle)
                 .ifPresent(session -> {
-                    throw new IllegalStateException("Vehicle with license plate " + licensePlate + " is already parked.");
+                    throw new ConflictException("Vehicle with license plate " + licensePlate + " is already parked.");
                 });
 
         // 3. Determine the required spot type and find an available spot
         spotType requiredSpotType = getSpotTypeForVehicle(vehicleType);
         ParkingSpot availableSpot = parkingSpotRepository.findFirstBySpotTypeAndSpotStatus(requiredSpotType, spotStatus.AVAILABLE)
-                .orElseThrow(() -> new IllegalStateException("No available " + requiredSpotType + " spots."));
+                .orElseThrow(() -> new ConflictException("No available " + requiredSpotType + " spots."));
 
         // 4. Update the spot status to OCCUPIED
         availableSpot.setStatus(spotStatus.OCCUPIED);
@@ -69,11 +71,11 @@ public class ParkingService {
     public ParkingSession checkOut(String licensePlate) {
         // 1. Find the vehicle
         Vehicle vehicle = vehicleRepository.findByLicensePlate(licensePlate)
-                .orElseThrow(() -> new IllegalStateException("Vehicle with license plate " + licensePlate + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle with license plate " + licensePlate + " not found."));
 
         // 2. Find the active parking session
         ParkingSession activeSession = parkingSessionRepository.findByVehicleAndCheckOutTimeIsNull(vehicle)
-                .orElseThrow(() -> new IllegalStateException("No active parking session found for vehicle with license plate " + licensePlate + "."));
+                .orElseThrow(() -> new ResourceNotFoundException("No active parking session found for vehicle with license plate " + licensePlate + "."));
         // 3. Update the parking session with check-out time and status
         activeSession.setCheckOutTime(Instant.now().toEpochMilli());
         activeSession.setStatus("COMPLETED");
