@@ -1,6 +1,6 @@
 package com.example.parking.Enum;
 
-public enum sizeType {
+public enum spotType {
     COMPACT,
     REGULAR,
     LARGE,
